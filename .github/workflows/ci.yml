@@ -35,7 +35,7 @@ jobs:
           cache: true
       - run: go build ./...
       - run: gofmt -l . | (! grep .)
-      - uses: golangci/golangci-lint-action@v7
+      - uses: golangci/golangci-lint-action@v9
         with:
           version: v2.12.2
       - run: go vet ./...
