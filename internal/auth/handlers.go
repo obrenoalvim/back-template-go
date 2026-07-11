@@ -54,7 +54,7 @@ func (h *Handlers) Register(c *fiber.Ctx) error {
 	}
 
 	h.mailer.Send(req.Email, "Verify your email", "Verification token: "+token)
-	return c.SendStatus(fiber.StatusCreated)
+	return apierror.Empty(c, fiber.StatusCreated)
 }
 
 func (h *Handlers) VerifyEmail(c *fiber.Ctx) error {
@@ -74,7 +74,7 @@ func (h *Handlers) VerifyEmail(c *fiber.Ctx) error {
 	if err := h.db.Save(&user).Error; err != nil {
 		return err
 	}
-	return c.SendStatus(fiber.StatusOK)
+	return apierror.Empty(c, fiber.StatusOK)
 }
 
 func (h *Handlers) Login(c *fiber.Ctx) error {
@@ -148,10 +148,10 @@ func (h *Handlers) Logout(c *fiber.Ctx) error {
 
 	claims, err := ParseRefreshToken(h.cfg.JWTSecret, req.RefreshToken)
 	if err != nil {
-		return c.SendStatus(fiber.StatusOK) // idempotent
+		return apierror.Empty(c, fiber.StatusOK) // idempotent
 	}
 	h.db.Where("jti = ?", claims.JTI).Delete(&models.RefreshToken{})
-	return c.SendStatus(fiber.StatusOK)
+	return apierror.Empty(c, fiber.StatusOK)
 }
 
 func (h *Handlers) ForgotPassword(c *fiber.Ctx) error {
@@ -172,7 +172,7 @@ func (h *Handlers) ForgotPassword(c *fiber.Ctx) error {
 		h.mailer.Send(req.Email, "Reset your password", "Reset token: "+token)
 	}
 	// Always 200 — no user-enumeration leak, same response whether or not the email exists.
-	return c.SendStatus(fiber.StatusOK)
+	return apierror.Empty(c, fiber.StatusOK)
 }
 
 func (h *Handlers) ResetPassword(c *fiber.Ctx) error {
@@ -199,7 +199,7 @@ func (h *Handlers) ResetPassword(c *fiber.Ctx) error {
 	if err := h.db.Save(&user).Error; err != nil {
 		return err
 	}
-	return c.SendStatus(fiber.StatusOK)
+	return apierror.Empty(c, fiber.StatusOK)
 }
 
 func (h *Handlers) issueTokens(user *models.User) (TokenResponse, error) {

@@ -45,7 +45,7 @@ func (h *Handlers) ChangePassword(c *fiber.Ctx) error {
 	if err := h.db.Save(&user).Error; err != nil {
 		return err
 	}
-	return c.SendStatus(fiber.StatusOK)
+	return apierror.Empty(c, fiber.StatusOK)
 }
 
 func (h *Handlers) DeleteAccount(c *fiber.Ctx) error {
@@ -53,5 +53,5 @@ func (h *Handlers) DeleteAccount(c *fiber.Ctx) error {
 	if err := h.db.Delete(&models.User{}, "id = ?", current.ID).Error; err != nil {
 		return err
 	}
-	return c.SendStatus(fiber.StatusOK)
+	return apierror.Empty(c, fiber.StatusOK)
 }

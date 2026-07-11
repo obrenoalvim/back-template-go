@@ -99,5 +99,5 @@ func (h *Handlers) Delete(c *fiber.Ctx) error {
 	if err := h.db.Delete(note).Error; err != nil {
 		return err
 	}
-	return c.SendStatus(fiber.StatusNoContent)
+	return apierror.Empty(c, fiber.StatusNoContent)
 }

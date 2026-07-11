@@ -12,9 +12,9 @@ type Config struct {
 
 	DatabaseURL string
 
-	JWTSecret          string
-	JWTAccessTTLMin    int
-	JWTRefreshTTLDays  int
+	JWTSecret         string
+	JWTAccessTTLMin   int
+	JWTRefreshTTLDays int
 
 	MailHost     string
 	MailPort     int

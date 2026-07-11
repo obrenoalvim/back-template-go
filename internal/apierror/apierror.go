@@ -2,6 +2,13 @@ package apierror
 
 import "github.com/gofiber/fiber/v2"
 
+// Empty writes `status` with a genuinely empty body — unlike fiber.Ctx.SendStatus,
+// which fills the body with the status text (e.g. "Created") whenever nothing else
+// has been written, breaking clients that expect an empty response.
+func Empty(c *fiber.Ctx, status int) error {
+	return c.Status(status).Send(nil)
+}
+
 type ApiError struct {
 	Status  int
 	Code    string
