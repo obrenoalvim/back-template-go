@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+unformatted=$(gofmt -l .)
+if [ -n "$unformatted" ]; then
+	echo "gofmt: the following files are not formatted:"
+	echo "$unformatted"
+	echo "run: gofmt -w ."
+	exit 1
+fi
+
+golangci-lint run ./...
