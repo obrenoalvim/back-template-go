@@ -36,9 +36,16 @@ func New(cfg config.Config, gormDB *gorm.DB) *fiber.App {
 	return app
 }
 
+// requestLogger runs the configured ErrorHandler itself (instead of letting Fiber's
+// outer dispatcher do it after this middleware returns) so c.Response().StatusCode()
+// reflects the real outcome — otherwise every erroring request logs whatever default
+// status was set before the handler ran (200), not the 4xx/5xx actually sent.
 func requestLogger(c *fiber.Ctx) error {
 	start := time.Now()
 	err := c.Next()
+	if err != nil {
+		err = apierror.Handler(c, err)
+	}
 	slog.Info("request",
 		"method", c.Method(),
 		"path", c.Path(),
