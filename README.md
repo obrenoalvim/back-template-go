@@ -2,7 +2,7 @@ English | [Português](README.pt.md)
 
 # back-template-go
 
-Production-ready backend base template: Go, [Fiber](https://gofiber.io), GORM + Postgres + golang-migrate, JWT auth (access + rotating/revocable refresh tokens), rate limiting, structured logging, and Docker — all pre-wired and tested end to end. Sibling of `back-template-nest`, `back-template-laravel`, `back-template-spring`, and `back-template-fastapi`: same endpoint contract and error shape, different stack.
+Backend starter template in Go: Fiber, GORM + Postgres + golang-migrate, JWT auth with rotating/revocable refresh tokens, rate limiting, structured logging, and Docker, all wired together and tested end to end. Part of a backend template family (`back-template-nest`, `back-template-laravel`, `back-template-spring`, `back-template-fastapi`) that shares the same endpoint contract and error shape across different stacks.
 
 ## Contents
 
@@ -26,20 +26,20 @@ Production-ready backend base template: Go, [Fiber](https://gofiber.io), GORM + 
 ## Stack
 
 - [Go](https://go.dev) 1.25
-- [Fiber](https://gofiber.io) v2 — Express-like router/middleware, the most widely used Go web framework
-- [GORM](https://gorm.io) + [pgx](https://github.com/jackc/pgx) (via `gorm.io/driver/postgres`) + [golang-migrate](https://github.com/golang-migrate/migrate) — schema versioned in SQL files, embedded in the binary via `go:embed`, applied automatically on boot
+- [Fiber](https://gofiber.io) v2: Express-like router/middleware, the most widely used Go web framework
+- [GORM](https://gorm.io) + [pgx](https://github.com/jackc/pgx) (via `gorm.io/driver/postgres`) + [golang-migrate](https://github.com/golang-migrate/migrate): schema versioned in SQL files, embedded in the binary via `go:embed`, applied automatically on boot
 - [Postgres](https://www.postgresql.org)
-- JWT auth ([golang-jwt/jwt](https://github.com/golang-jwt/jwt)) — short-lived access token + longer-lived refresh token, rotated and persisted server-side for revocation (`internal/models/refresh_token.go`)
-- `golang.org/x/crypto/bcrypt` — password hashing
-- Fiber's built-in [`limiter`](https://docs.gofiber.io/api/middleware/limiter) middleware — rate limiting (5 req/min/IP on login/register), no extra dependency
-- Mail via `net/smtp`, with a console fallback in dev (`internal/mail`) — no setup required to try the auth flow locally
-- `log/slog` (stdlib) — structured logging, pretty text in dev, JSON in prod
+- JWT auth ([golang-jwt/jwt](https://github.com/golang-jwt/jwt)): short-lived access token + longer-lived refresh token, rotated and persisted server-side for revocation (`internal/models/refresh_token.go`)
+- `golang.org/x/crypto/bcrypt`: password hashing
+- Fiber's built-in [`limiter`](https://docs.gofiber.io/api/middleware/limiter) middleware: rate limiting (5 req/min/IP on login/register), no extra dependency
+- Mail via `net/smtp`, with a console fallback in dev (`internal/mail`): no setup required to try the auth flow locally
+- `log/slog` (stdlib): structured logging, pretty text in dev, JSON in prod
 - Consistent `{"error": {"code", "message", "details"}}` shape across every endpoint (`internal/apierror`)
-- [go-playground/validator](https://github.com/go-playground/validator) — struct-tag request validation, JSON field names in error details
-- Go's `testing` + [testify](https://github.com/stretchr/testify) — unit + integration tests against a real Postgres (via `fiber.App.Test`, no mocked DB)
-- [golangci-lint](https://golangci-lint.run) — meta-linter; native git pre-commit hook (`gofmt` + `golangci-lint`), no cross-language tooling needed
-- Docker + docker-compose — multi-stage build, `CGO_ENABLED=0` static binary on a **distroless nonroot** runtime image
-- GitHub Actions CI — build/lint/vet/test against a real Postgres service container, Docker image build
+- [go-playground/validator](https://github.com/go-playground/validator): struct-tag request validation, JSON field names in error details
+- Go's `testing` + [testify](https://github.com/stretchr/testify): unit + integration tests against a real Postgres (via `fiber.App.Test`, no mocked DB)
+- [golangci-lint](https://golangci-lint.run): meta-linter; native git pre-commit hook (`gofmt` + `golangci-lint`), no cross-language tooling needed
+- Docker + docker-compose: multi-stage build, `CGO_ENABLED=0` static binary on a **distroless nonroot** runtime image
+- GitHub Actions CI: build/lint/vet/test against a real Postgres service container, Docker image build
 - `/health` for the Docker healthcheck (plus a tiny standalone `healthcheck` binary, since distroless has no shell/curl)
 
 ## Project structure
@@ -96,7 +96,7 @@ See `.env.example` for the full, commented list.
 | `LOG_LEVEL`                          | no          | `debug` or anything else (info); default `info`                     |
 | `MAIL_HOST`/`MAIL_PORT`/`MAIL_USERNAME`/`MAIL_PASSWORD` | no | Sends real email via SMTP; without `MAIL_HOST`, emails are logged to console instead |
 
-`internal/config/config.go` loads these with sane defaults — nothing panics on a missing var, but `JWT_SECRET` should always be overridden outside local dev.
+`internal/config/config.go` loads these with sane defaults. Nothing panics on a missing var, but `JWT_SECRET` should always be overridden outside local dev.
 
 ## Auth
 
@@ -111,13 +111,13 @@ See `.env.example` for the full, commented list.
 - `POST /auth/reset-password` — 200. 404/409 like verify-email.
 - `PATCH /account/password`, `DELETE /account` (`internal/account`) — authenticated, `Authorization: Bearer <accessToken>`.
 - Rate limited: 5 register/login attempts per 60s per IP (Fiber's `limiter` middleware, see `internal/auth/routes.go`).
-- `auth.RequireAuth` (`internal/auth/middleware.go`) is the single middleware every protected route uses — decodes and validates the bearer token, no per-route duplication. `auth.RequireAdmin` layers a role check on top.
+- `auth.RequireAuth` (`internal/auth/middleware.go`) is the single middleware every protected route uses: it decodes and validates the bearer token, so there's no per-route duplication. `auth.RequireAdmin` layers a role check on top.
 
-**Refresh tokens are persisted**: unlike a purely stateless JWT scheme, each refresh token's `jti` is stored in the `refresh_tokens` table so it can be revoked/rotated server-side — logging out or refreshing deletes the old row, so a stolen refresh token can't be replayed after rotation.
+**Refresh tokens are persisted.** Unlike a purely stateless JWT scheme, each refresh token's `jti` is stored in the `refresh_tokens` table so it can be revoked or rotated server-side. Logging out or refreshing deletes the old row, so a stolen refresh token can't be replayed after rotation.
 
 ## Roles
 
-`Role` type (`USER` | `ADMIN`, default `USER`) on `User.Role` — never trust a role from a request body. `GET /admin/users` (`internal/admin`) is the reference admin-only endpoint, guarded by `auth.RequireAdmin`. No self-serve promotion — flip it directly in the DB for local testing: `UPDATE users SET role = 'ADMIN' WHERE email = '...';`.
+`Role` type (`USER` | `ADMIN`, default `USER`) on `User.Role`. Never trust a role from a request body. `GET /admin/users` (`internal/admin`) is the reference admin-only endpoint, guarded by `auth.RequireAdmin`. No self-serve promotion — flip it directly in the DB for local testing: `UPDATE users SET role = 'ADMIN' WHERE email = '...';`.
 
 ## Error shape
 
@@ -127,20 +127,20 @@ Every error response — validation, auth, not-found, unhandled — has the same
 { "error": { "code": "VALIDATION_ERROR", "message": "Invalid request body", "details": ["email: failed on the 'email' rule"] } }
 ```
 
-`code` is one of `VALIDATION_ERROR`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `RATE_LIMITED`, `INTERNAL_ERROR` — deliberately matching the shape used by the rest of the backend family, so a front-end template can swap backends with minimal changes to its error-handling code.
+`code` is one of `VALIDATION_ERROR`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `RATE_LIMITED`, `INTERNAL_ERROR`, deliberately matching the shape used by the rest of the backend family so a front-end template can swap backends with minimal changes to its error-handling code.
 
 ## Database
 
-Schema lives in `internal/db/migrations/` (plain SQL, golang-migrate format) and `internal/models/` (GORM structs mirroring it — used for querying, not for generating the schema; this template does **not** rely on `AutoMigrate` in production). After changing the schema:
+Schema lives in `internal/db/migrations/` (plain SQL, golang-migrate format) and `internal/models/` (GORM structs mirroring it, used for querying rather than generating the schema; this template does **not** rely on `AutoMigrate` in production). After changing the schema:
 
 ```bash
 migrate create -ext sql -dir internal/db/migrations -seq add_something
 # edit the generated *.up.sql / *.down.sql, then update internal/models/ to match
 ```
 
-(Requires the [`migrate` CLI](https://github.com/golang-migrate/migrate#cli-usage) locally just to scaffold new migration filenames — the app itself applies migrations via the embedded library, no CLI needed at runtime.)
+(Requires the [`migrate` CLI](https://github.com/golang-migrate/migrate#cli-usage) locally just to scaffold new migration filenames. The app itself applies migrations via the embedded library, so no CLI is needed at runtime.)
 
-Every foreign key to `users` uses `ON DELETE CASCADE` from the first migration — deleting an account cleans up its notes and refresh tokens automatically (see [Design notes](#design-notes-and-gotchas)).
+Every foreign key to `users` uses `ON DELETE CASCADE` from the first migration, so deleting an account cleans up its notes and refresh tokens automatically (see [Design notes](#design-notes-and-gotchas)).
 
 ## Example CRUD resource
 
@@ -149,23 +149,23 @@ Every foreign key to `users` uses `ON DELETE CASCADE` from the first migration �
 ## Testing
 
 - **Unit** (`go test ./internal/auth/...`): password hashing and JWT roundtrip, no DB — `internal/auth/auth_test.go`.
-- **Integration** (`go test ./internal/server/...`): `internal/server/server_test.go` drives the full register → verify → login → notes CRUD → refresh → delete-account flow through `fiber.App.Test()` (in-process, no real network listener) against a real Postgres — no mocked DB. Set `TEST_DATABASE_URL` to point it at a specific database (falls back to `DATABASE_URL`/its default otherwise).
+- **Integration** (`go test ./internal/server/...`): `internal/server/server_test.go` drives the full register → verify → login → notes CRUD → refresh → delete-account flow through `fiber.App.Test()` (in-process, no real network listener) against a real Postgres, with no mocked DB. Set `TEST_DATABASE_URL` to point it at a specific database (falls back to `DATABASE_URL`/its default otherwise).
 - CI spins up a Postgres service container and runs the whole suite (`go test ./...`) against it.
 
 ## CI/CD
 
 `.github/workflows/ci.yml` runs two jobs on every push/PR:
 
-1. **build** — `go build`, `gofmt -l` (fails on unformatted files), `golangci-lint run`, `go vet`, `go test ./...` — all against a real Postgres service container
-2. **docker** — builds the production Docker image (`docker/build-push-action`, no push) to catch Dockerfile breakage early
+1. **build**: `go build`, `gofmt -l` (fails on unformatted files), `golangci-lint run`, `go vet`, `go test ./...`, all against a real Postgres service container
+2. **docker**: builds the production Docker image (`docker/build-push-action`, no push) to catch Dockerfile breakage early
 
 Dependabot (`.github/dependabot.yml`) checks Go modules, GitHub Actions, and the Dockerfile weekly.
 
 ## Docker
 
-- `Dockerfile` — multi-stage (`build` → `runtime`). The build stage compiles with `CGO_ENABLED=0` for a fully static binary; the runtime stage is `gcr.io/distroless/static:nonroot` — no shell, no package manager, ~2MB base, runs as a non-root user by default.
+- `Dockerfile`: multi-stage (`build` → `runtime`). The build stage compiles with `CGO_ENABLED=0` for a fully static binary; the runtime stage is `gcr.io/distroless/static:nonroot`, with no shell, no package manager, about 2MB at the base, and a non-root user by default.
 - Since distroless has no `curl`/`wget`/shell for a `HEALTHCHECK CMD`, `cmd/healthcheck` is a second tiny Go binary (a plain HTTP GET to `/health`) compiled and copied into the same image.
-- `docker-compose.yml` — `db` (Postgres 17, healthchecked via `pg_isready`, host port `5460` by default) and `app` (built from the Dockerfile, healthchecked via the `/healthcheck` binary, waits for `db` to be healthy).
+- `docker-compose.yml`: `db` (Postgres 17, healthchecked via `pg_isready`, host port `5460` by default) and `app` (built from the Dockerfile, healthchecked via the `/healthcheck` binary, waits for `db` to be healthy).
 
 ## Scripts
 
@@ -185,14 +185,14 @@ Dependabot (`.github/dependabot.yml`) checks Go modules, GitHub Actions, and the
 1. Click "Use this template" on GitHub
 2. `go mod edit -module github.com/<you>/<repo>` and update every import path (`grep -rl obrenoalvim/back-template-go .` to find them all), and update this README
 3. `cp .env.example .env`, set a real `JWT_SECRET`
-4. `git config core.hooksPath githooks` (one-time, per clone — this repo's hook isn't installed automatically the way `npm install` triggers Husky)
+4. `git config core.hooksPath githooks` (one-time, per clone; this repo's hook isn't installed automatically the way `npm install` triggers Husky)
 5. `docker compose up -d --build` (or the no-Docker path above)
 6. Delete `internal/notes` once you've copied its pattern for your own first feature
 
 ## Design notes and gotchas
 
-- **`ON DELETE CASCADE` on every FK to `users`, from the very first migration**: written this way from the start specifically because `back-template-fastapi` (built earlier in the same session) shipped without it and `DELETE /account` broke with a live `ForeignKeyViolationError` the moment a user had any notes. Deleting a user needs to cascade at the DB level — app-level "delete children first" is one more thing to forget when a new child table shows up later.
-- **`fiber.Ctx.SendStatus` is not "set status, empty body"**: it fills the body with the status text (`"Created"`, `"OK"`, ...) whenever nothing else has been written — a literal 7-byte body on what the rest of the backend family returns as genuinely empty. `apierror.Empty(c, status)` (`c.Status(status).Send(nil)`) is used everywhere an endpoint should have a truly empty response.
-- **A logging middleware that reads the status *before* the error handler wrote it, always logs 200**: Fiber's configured `ErrorHandler` only runs once the full middleware chain (including a logging middleware wrapping everything with `c.Next()`) has already returned control to Fiber's outer dispatcher — so a naive `status := c.Response().StatusCode()` right after `c.Next()` reads the *pre-error* default status. Every 4xx/5xx request logged as 200 until `requestLogger` (`internal/server/server.go`) was changed to invoke `apierror.Handler` itself when `c.Next()` returns a non-nil error, before reading the status.
-- **`go-playground/validator` reports Go field names, not JSON field names, unless you tell it not to**: `fe.Field()` returns `"Email"` (the struct field) by default, not `"email"` (the JSON key) — inconsistent with every other backend in the family, which report the wire-format field name. Fixed via `validate.RegisterTagNameFunc` in `internal/apierror/bind.go`.
-- **Migrations are embedded (`go:embed`), not read from disk at runtime**: the distroless runtime image has no filesystem access to a `migrations/` directory shipped separately — `internal/db/db.go` embeds `internal/db/migrations/*.sql` directly into the compiled binary via `//go:embed all:migrations`, so `go build` produces a single self-contained artifact with no external files to copy into the Docker image beyond the binary itself.
+- **`ON DELETE CASCADE` on every FK to `users`, from the first migration.** Written this way from the start because `back-template-fastapi` (built earlier in the same session) shipped without it, and `DELETE /account` broke with a live `ForeignKeyViolationError` the moment a user had any notes. Deleting a user needs to cascade at the DB level; app-level "delete children first" is one more thing to forget when a new child table shows up later.
+- **`fiber.Ctx.SendStatus` is not "set status, empty body."** It fills the body with the status text (`"Created"`, `"OK"`, ...) whenever nothing else has been written: a literal 7-byte body where the rest of the backend family returns something genuinely empty. `apierror.Empty(c, status)` (`c.Status(status).Send(nil)`) is used everywhere an endpoint should return a truly empty response.
+- **A logging middleware that reads the status before the error handler wrote it always logs 200.** Fiber's configured `ErrorHandler` only runs once the full middleware chain (including a logging middleware wrapping everything with `c.Next()`) has already returned control to Fiber's outer dispatcher, so a naive `status := c.Response().StatusCode()` right after `c.Next()` reads the pre-error default status. Every 4xx/5xx request logged as 200 until `requestLogger` (`internal/server/server.go`) was changed to invoke `apierror.Handler` itself when `c.Next()` returns a non-nil error, before reading the status.
+- **`go-playground/validator` reports Go field names, not JSON field names, unless you tell it not to.** `fe.Field()` returns `"Email"` (the struct field) by default, not `"email"` (the JSON key), inconsistent with every other backend in the family, which reports the wire-format field name. Fixed via `validate.RegisterTagNameFunc` in `internal/apierror/bind.go`.
+- **Migrations are embedded (`go:embed`), not read from disk at runtime.** The distroless runtime image has no filesystem access to a `migrations/` directory shipped separately, so `internal/db/db.go` embeds `internal/db/migrations/*.sql` directly into the compiled binary via `//go:embed all:migrations`. `go build` produces a single self-contained artifact, with no external files to copy into the Docker image beyond the binary itself.
