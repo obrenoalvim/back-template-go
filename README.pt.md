@@ -57,7 +57,8 @@ internal/
   apierror/                         # ApiError + ErrorHandler do Fiber → formato {"error": {...}}, bind de validação
   auth/                             # JWT, bcrypt, middleware RequireAuth/RequireAdmin, handlers de /auth/*
   account/                          # handlers de /account/*
-  admin/                            # handler de /admin/users
+  admin/                            # handlers de /admin/users, /admin/notes
+  diagnostics/                      # QueryCounter (plugin GORM só de teste, guarda de N+1)
   notes/                            # handlers de /api/notes/* (CRUD de referência)
   mail/                             # envio SMTP, fallback console em dev
 ```
@@ -150,6 +151,7 @@ Toda foreign key para `users` usa `ON DELETE CASCADE` desde a primeira migration
 
 - **Unitário** (`go test ./internal/auth/...`): hash de senha e roundtrip de JWT, sem banco — `internal/auth/auth_test.go`.
 - **Integração** (`go test ./internal/server/...`): `internal/server/server_test.go` percorre o fluxo completo registro → verificação → login → CRUD de notas → refresh → exclusão de conta através de `fiber.App.Test()` (in-process, sem listener de rede real) contra um Postgres real, sem mock de banco. Defina `TEST_DATABASE_URL` para apontar para um banco específico (usa `DATABASE_URL`/seu padrão como fallback).
+- **Guarda de contagem de queries (N+1)** (`go test ./internal/admin/...`): `internal/admin/query_count_test.go` semeia uma quantidade variável de notas, registra `diagnostics.QueryCounter` (um plugin GORM que conta cada statement SQL executado) na conexão, e garante que `admin.NotesWithOwners` — a função por trás de `GET /admin/notes` — sempre roda exatamente 1 query SQL, tanto com 4 quanto com 8 notas. `NotesWithOwners` usa `Joins("Owner")` do GORM (um único join SQL) em vez de carregar o dono de cada nota numa query separada; se alguém trocar isso por uma busca por nota, esse teste quebra antes de chegar em produção.
 - O CI sobe um container de serviço Postgres e roda a suíte inteira (`go test ./...`) contra ele.
 
 ## CI/CD

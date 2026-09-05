@@ -57,7 +57,8 @@ internal/
   apierror/                         # ApiError + Fiber ErrorHandler → {"error": {...}} shape, validation binding
   auth/                             # JWT, bcrypt, RequireAuth/RequireAdmin middleware, /auth/* handlers
   account/                          # /account/* handlers
-  admin/                            # /admin/users handler
+  admin/                            # /admin/users, /admin/notes handlers
+  diagnostics/                      # QueryCounter (test-only GORM plugin, N+1 guard)
   notes/                            # /api/notes/* handlers (reference CRUD)
   mail/                             # SMTP send, console fallback in dev
 ```
@@ -150,6 +151,7 @@ Every foreign key to `users` uses `ON DELETE CASCADE` from the first migration, 
 
 - **Unit** (`go test ./internal/auth/...`): password hashing and JWT roundtrip, no DB — `internal/auth/auth_test.go`.
 - **Integration** (`go test ./internal/server/...`): `internal/server/server_test.go` drives the full register → verify → login → notes CRUD → refresh → delete-account flow through `fiber.App.Test()` (in-process, no real network listener) against a real Postgres, with no mocked DB. Set `TEST_DATABASE_URL` to point it at a specific database (falls back to `DATABASE_URL`/its default otherwise).
+- **N+1 query-count guard** (`go test ./internal/admin/...`): `internal/admin/query_count_test.go` seeds a variable number of notes, registers `diagnostics.QueryCounter` (a GORM plugin counting every SQL statement executed) on the connection, and asserts that `admin.NotesWithOwners` — the function behind `GET /admin/notes` — always runs exactly 1 SQL query, whether there are 4 notes or 8. `NotesWithOwners` uses GORM's `Joins("Owner")` (a single SQL join) instead of loading each note's owner in a separate query; if someone swaps that for a per-note lookup, this test goes red before it reaches production.
 - CI spins up a Postgres service container and runs the whole suite (`go test ./...`) against it.
 
 ## CI/CD

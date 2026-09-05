@@ -8,4 +8,5 @@ import (
 func RegisterRoutes(router fiber.Router, h *Handlers, secret string) {
 	g := router.Group("/admin", auth.RequireAuth(secret), auth.RequireAdmin)
 	g.Get("/users", h.ListUsers)
+	g.Get("/notes", h.ListNotes)
 }
