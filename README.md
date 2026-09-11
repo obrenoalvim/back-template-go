@@ -2,6 +2,8 @@ English | [Português](README.pt.md)
 
 # back-template-go
 
+[![CI](https://github.com/obrenoalvim/back-template-go/actions/workflows/ci.yml/badge.svg)](https://github.com/obrenoalvim/back-template-go/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Backend starter template in Go: Fiber, GORM + Postgres + golang-migrate, JWT auth with rotating/revocable refresh tokens, rate limiting, structured logging, and Docker, all wired together and tested end to end. Part of a backend template family (`back-template-nest`, `back-template-laravel`, `back-template-spring`, `back-template-fastapi`) that shares the same endpoint contract and error shape across different stacks.
 
 ## Contents
