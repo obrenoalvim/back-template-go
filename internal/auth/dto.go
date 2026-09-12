@@ -27,11 +27,6 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"newPassword" validate:"required,min=8"`
 }
 
-type ChangePasswordRequest struct {
-	CurrentPassword string `json:"currentPassword" validate:"required"`
-	NewPassword     string `json:"newPassword" validate:"required,min=8"`
-}
-
 type TokenResponse struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`

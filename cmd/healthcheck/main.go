@@ -16,7 +16,12 @@ func main() {
 
 	client := http.Client{Timeout: 2 * time.Second}
 	resp, err := client.Get("http://127.0.0.1:" + port + "/health")
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if err != nil {
+		os.Exit(1)
+	}
+	status := resp.StatusCode
+	_ = resp.Body.Close()
+	if status != http.StatusOK {
 		os.Exit(1)
 	}
 }
