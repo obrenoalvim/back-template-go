@@ -1,16 +1,34 @@
-English | [Português](README.pt.md)
+<div align="center">
+
+<img src=".github/logo.svg" alt="back-template-go logo" width="120" height="120">
 
 # back-template-go
 
-[![CI](https://github.com/obrenoalvim/back-template-go/actions/workflows/ci.yml/badge.svg)](https://github.com/obrenoalvim/back-template-go/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+**A Go API starter with Fiber, GORM and Postgres, JWT auth and a distroless Docker image.**<br>
+Rotating refresh tokens, rate limiting, structured logging and tests against a real database, all wired together.
 
-Backend starter template in Go: Fiber, GORM + Postgres + golang-migrate, JWT auth with rotating/revocable refresh tokens, rate limiting, structured logging, and Docker, all wired together and tested end to end. Part of a backend template family (`back-template-nest`, `back-template-laravel`, `back-template-spring`, `back-template-fastapi`) that shares the same endpoint contract and error shape across different stacks.
+[![CI](https://github.com/obrenoalvim/back-template-go/actions/workflows/ci.yml/badge.svg)](https://github.com/obrenoalvim/back-template-go/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/obrenoalvim/back-template-go?style=flat&logo=github&color=00c8e8)](https://github.com/obrenoalvim/back-template-go/stargazers)
+[![Go 1.25](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white)](#stack)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](#database)
+[![Docker](https://img.shields.io/badge/Docker-distroless-2496ED?logo=docker&logoColor=white)](#docker)
+
+**English** · [Português](README.pt.md) · [Español](README.es.md)
+
+[Stack](#stack) · [Getting started](#getting-started-docker-recommended) · [Auth](#auth) · [Testing](#testing) · [Template family](#the-template-family) · [FAQ](#faq)
+
+</div>
+
+---
+
+Backend starter template in Go: Fiber, GORM + Postgres + golang-migrate, JWT auth with rotating/revocable refresh tokens, rate limiting, structured logging, and Docker, all wired together and tested end to end. It shares the same endpoint contract and error shape as the other backend templates, with a different stack.
 
 ## Contents
 
 - [Stack](#stack)
 - [Project structure](#project-structure)
-- [Getting started (Docker)](#getting-started-docker--recommended)
+- [Getting started (Docker)](#getting-started-docker-recommended)
 - [Getting started (without Docker)](#getting-started-without-docker)
 - [Environment variables](#environment-variables)
 - [Auth](#auth)
@@ -20,7 +38,7 @@ Backend starter template in Go: Fiber, GORM + Postgres + golang-migrate, JWT aut
 - [Example CRUD resource](#example-crud-resource)
 - [Testing](#testing)
 - [CI/CD](#cicd)
-- [Docker](#docker-1)
+- [Docker](#docker)
 - [Scripts](#scripts)
 - [Using this as a template](#using-this-as-a-template)
 - [Design notes and gotchas](#design-notes-and-gotchas)
@@ -52,9 +70,9 @@ cmd/
   healthcheck/main.go          # standalone binary for the Dockerfile HEALTHCHECK
 internal/
   config/                        # env-based config, sane defaults
-  server/                         # server.New — wires every route; shared by main.go and tests
+  server/                         # server.New: wires every route; shared by main.go and tests
   db/                              # GORM connection + embedded golang-migrate migrations
-    migrations/                     # *.up.sql / *.down.sql — commit these
+    migrations/                     # *.up.sql / *.down.sql: commit these
   models/                           # User, RefreshToken, Note (GORM)
   apierror/                         # ApiError + Fiber ErrorHandler → {"error": {...}} shape, validation binding
   auth/                             # JWT, bcrypt, RequireAuth/RequireAdmin middleware, /auth/* handlers
@@ -65,7 +83,7 @@ internal/
   mail/                             # SMTP send, console fallback in dev
 ```
 
-## Getting started (Docker — recommended)
+## Getting started (Docker: recommended)
 
 ```bash
 cp .env.example .env
@@ -105,14 +123,14 @@ See `.env.example` for the full, commented list.
 
 `internal/auth` (all `/auth/*`, public):
 
-- `POST /auth/register` — 201, empty body. 409 if email taken.
-- `GET /auth/verify-email?token=...` — 200 empty. 404 invalid token, 409 expired.
-- `POST /auth/login` — 200, `{accessToken, refreshToken}`. 401 invalid credentials or unverified email.
-- `POST /auth/refresh` — rotates the refresh token (old one deleted, new one issued). 401 if invalid/expired/revoked.
-- `POST /auth/logout` — 200, idempotent.
-- `POST /auth/forgot-password` — always 200 (no user-enumeration leak).
-- `POST /auth/reset-password` — 200. 404/409 like verify-email.
-- `PATCH /account/password`, `DELETE /account` (`internal/account`) — authenticated, `Authorization: Bearer <accessToken>`.
+- `POST /auth/register`: 201, empty body. 409 if email taken.
+- `GET /auth/verify-email?token=...`: 200 empty. 404 invalid token, 409 expired.
+- `POST /auth/login`: 200, `{accessToken, refreshToken}`. 401 invalid credentials or unverified email.
+- `POST /auth/refresh`: rotates the refresh token (old one deleted, new one issued). 401 if invalid/expired/revoked.
+- `POST /auth/logout`: 200, idempotent.
+- `POST /auth/forgot-password`: always 200 (no user-enumeration leak).
+- `POST /auth/reset-password`: 200. 404/409 like verify-email.
+- `PATCH /account/password`, `DELETE /account` (`internal/account`): authenticated, `Authorization: Bearer <accessToken>`.
 - Rate limited: 5 register/login attempts per 60s per IP (Fiber's `limiter` middleware, see `internal/auth/routes.go`).
 - `auth.RequireAuth` (`internal/auth/middleware.go`) is the single middleware every protected route uses: it decodes and validates the bearer token, so there's no per-route duplication. `auth.RequireAdmin` layers a role check on top.
 
@@ -120,11 +138,11 @@ See `.env.example` for the full, commented list.
 
 ## Roles
 
-`Role` type (`USER` | `ADMIN`, default `USER`) on `User.Role`. Never trust a role from a request body. `GET /admin/users` (`internal/admin`) is the reference admin-only endpoint, guarded by `auth.RequireAdmin`. No self-serve promotion — flip it directly in the DB for local testing: `UPDATE users SET role = 'ADMIN' WHERE email = '...';`.
+`Role` type (`USER` | `ADMIN`, default `USER`) on `User.Role`. Never trust a role from a request body. `GET /admin/users` (`internal/admin`) is the reference admin-only endpoint, guarded by `auth.RequireAdmin`. No self-serve promotion: flip it directly in the DB for local testing: `UPDATE users SET role = 'ADMIN' WHERE email = '...';`.
 
 ## Error shape
 
-Every error response — validation, auth, not-found, unhandled — has the same envelope, produced by `apierror.Handler` (Fiber's global `ErrorHandler`):
+Every error response (validation, auth, not-found, unhandled) has the same envelope, produced by `apierror.Handler` (Fiber's global `ErrorHandler`):
 
 ```json
 { "error": { "code": "VALIDATION_ERROR", "message": "Invalid request body", "details": ["email: failed on the 'email' rule"] } }
@@ -151,9 +169,9 @@ Every foreign key to `users` uses `ON DELETE CASCADE` from the first migration, 
 
 ## Testing
 
-- **Unit** (`go test ./internal/auth/...`): password hashing and JWT roundtrip, no DB — `internal/auth/auth_test.go`.
+- **Unit** (`go test ./internal/auth/...`): password hashing and JWT roundtrip, no DB: `internal/auth/auth_test.go`.
 - **Integration** (`go test ./internal/server/...`): `internal/server/server_test.go` drives the full register → verify → login → notes CRUD → refresh → delete-account flow through `fiber.App.Test()` (in-process, no real network listener) against a real Postgres, with no mocked DB. Set `TEST_DATABASE_URL` to point it at a specific database (falls back to `DATABASE_URL`/its default otherwise).
-- **N+1 query-count guard** (`go test ./internal/admin/...`): `internal/admin/query_count_test.go` seeds a variable number of notes, registers `diagnostics.QueryCounter` (a GORM plugin counting every SQL statement executed) on the connection, and asserts that `admin.NotesWithOwners` — the function behind `GET /admin/notes` — always runs exactly 1 SQL query, whether there are 4 notes or 8. `NotesWithOwners` uses GORM's `Joins("Owner")` (a single SQL join) instead of loading each note's owner in a separate query; if someone swaps that for a per-note lookup, this test goes red before it reaches production.
+- **N+1 query-count guard** (`go test ./internal/admin/...`): `internal/admin/query_count_test.go` seeds a variable number of notes, registers `diagnostics.QueryCounter` (a GORM plugin counting every SQL statement executed) on the connection, and asserts that `admin.NotesWithOwners` (the function behind `GET /admin/notes`) always runs exactly 1 SQL query, whether there are 4 notes or 8. `NotesWithOwners` uses GORM's `Joins("Owner")` (a single SQL join) instead of loading each note's owner in a separate query; if someone swaps that for a per-note lookup, this test goes red before it reaches production.
 - CI spins up a Postgres service container and runs the whole suite (`go test ./...`) against it.
 
 ## CI/CD
@@ -200,3 +218,49 @@ Dependabot (`.github/dependabot.yml`) checks Go modules, GitHub Actions, and the
 - **A logging middleware that reads the status before the error handler wrote it always logs 200.** Fiber's configured `ErrorHandler` only runs once the full middleware chain (including a logging middleware wrapping everything with `c.Next()`) has already returned control to Fiber's outer dispatcher, so a naive `status := c.Response().StatusCode()` right after `c.Next()` reads the pre-error default status. Every 4xx/5xx request logged as 200 until `requestLogger` (`internal/server/server.go`) was changed to invoke `apierror.Handler` itself when `c.Next()` returns a non-nil error, before reading the status.
 - **`go-playground/validator` reports Go field names, not JSON field names, unless you tell it not to.** `fe.Field()` returns `"Email"` (the struct field) by default, not `"email"` (the JSON key), inconsistent with every other backend in the family, which reports the wire-format field name. Fixed via `validate.RegisterTagNameFunc` in `internal/apierror/bind.go`.
 - **Migrations are embedded (`go:embed`), not read from disk at runtime.** The distroless runtime image has no filesystem access to a `migrations/` directory shipped separately, so `internal/db/db.go` embeds `internal/db/migrations/*.sql` directly into the compiled binary via `//go:embed all:migrations`. `go build` produces a single self-contained artifact, with no external files to copy into the Docker image beyond the binary itself.
+
+---
+
+## FAQ
+
+**Which web framework and ORM does it use?**
+[Fiber](https://gofiber.io) v2 for routing and middleware, and [GORM](https://gorm.io) with the pgx driver for Postgres. Migrations come from [golang-migrate](https://github.com/golang-migrate/migrate).
+
+**How do migrations run?**
+They are plain SQL files embedded in the binary with `go:embed` and applied automatically on boot. You only need the `migrate` CLI locally to scaffold new migration filenames.
+
+**Why a distroless image?**
+The binary is static (`CGO_ENABLED=0`) and runs on `gcr.io/distroless/static:nonroot`: no shell, no package manager, a non-root user by default. Since there is no `curl` for a healthcheck, a second tiny Go binary does the HTTP GET.
+
+**Which ports does it use?**
+The app listens on `8083`. Postgres is exposed on host port `5460` by default, to avoid clashing with a local Postgres on `5432`.
+
+**How does it prevent N+1 queries?**
+A test registers a GORM plugin that counts every SQL statement and asserts that `GET /admin/notes` always runs exactly one query. See [Testing](#testing).
+
+**How do I enable the pre-commit hook?**
+Run `git config core.hooksPath githooks` once per clone.
+
+## The template family
+
+Same idea, different stack. Clone one and start building.
+
+| Layer | Starter |
+|---|---|
+| Backend | [Spring Boot](https://github.com/obrenoalvim/back-template-spring) · **Go (this repo)** · [FastAPI](https://github.com/obrenoalvim/back-template-fastapi) · [NestJS](https://github.com/obrenoalvim/back-template-nest) · [Laravel](https://github.com/obrenoalvim/back-template-laravel) · [ASP.NET Core](https://github.com/obrenoalvim/back-template-dotnet) |
+| Frontend | [Angular](https://github.com/obrenoalvim/front-template-angular) · [React](https://github.com/obrenoalvim/front-template-react) · [SvelteKit](https://github.com/obrenoalvim/front-template-sveltekit) · [Vue](https://github.com/obrenoalvim/front-template-vue) |
+| Full-stack | [Next.js](https://github.com/obrenoalvim/next-template) |
+
+## License
+
+[MIT](LICENSE)
+
+---
+
+<div align="center">
+
+If this saved you a day of setup, a ⭐ helps other developers find it.
+
+<sub>**Topics:** go · golang · fiber · gorm · golang-migrate · postgresql · jwt-authentication · rate-limiting · docker · distroless · rest-api · starter-kit · backend-template</sub>
+
+</div>

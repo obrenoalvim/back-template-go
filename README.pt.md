@@ -1,16 +1,34 @@
-[English](README.md) | Português
+<div align="center">
+
+<img src=".github/logo.svg" alt="Logo do back-template-go" width="120" height="120">
 
 # back-template-go
 
-[![CI](https://github.com/obrenoalvim/back-template-go/actions/workflows/ci.yml/badge.svg)](https://github.com/obrenoalvim/back-template-go/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+**Um starter de API em Go com Fiber, GORM e Postgres, auth JWT e uma imagem Docker distroless.**<br>
+Refresh tokens rotativos, rate limiting, logging estruturado e testes contra um banco de verdade, tudo integrado.
 
-Template inicial de backend em Go: Fiber, GORM + Postgres + golang-migrate, auth JWT com refresh token rotativo/revogável, rate limiting, logging estruturado e Docker, tudo integrado e testado de ponta a ponta. Faz parte de uma família de templates de backend (`back-template-nest`, `back-template-laravel`, `back-template-spring`, `back-template-fastapi`) que compartilha o mesmo contrato de endpoints e formato de erro entre stacks diferentes.
+[![CI](https://github.com/obrenoalvim/back-template-go/actions/workflows/ci.yml/badge.svg)](https://github.com/obrenoalvim/back-template-go/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/obrenoalvim/back-template-go?style=flat&logo=github&color=00c8e8)](https://github.com/obrenoalvim/back-template-go/stargazers)
+[![Go 1.25](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white)](#stack)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](#banco-de-dados)
+[![Docker](https://img.shields.io/badge/Docker-distroless-2496ED?logo=docker&logoColor=white)](#docker)
+
+[English](README.md) · **Português** · [Español](README.es.md)
+
+[Stack](#stack) · [Começando](#começando-docker-recomendado) · [Auth](#auth) · [Testes](#testes) · [Família de templates](#a-família-de-templates) · [Perguntas frequentes](#perguntas-frequentes)
+
+</div>
+
+---
+
+Template inicial de backend em Go: Fiber, GORM + Postgres + golang-migrate, auth JWT com refresh token rotativo/revogável, rate limiting, logging estruturado e Docker, tudo integrado e testado de ponta a ponta. Compartilha o mesmo contrato de endpoints e formato de erro dos outros templates de backend, com stack diferente.
 
 ## Conteúdo
 
 - [Stack](#stack)
 - [Estrutura do projeto](#estrutura-do-projeto)
-- [Começando (Docker)](#começando-docker--recomendado)
+- [Começando (Docker)](#começando-docker-recomendado)
 - [Começando (sem Docker)](#começando-sem-docker)
 - [Variáveis de ambiente](#variáveis-de-ambiente)
 - [Auth](#auth)
@@ -20,7 +38,7 @@ Template inicial de backend em Go: Fiber, GORM + Postgres + golang-migrate, auth
 - [Exemplo de recurso CRUD](#exemplo-de-recurso-crud)
 - [Testes](#testes)
 - [CI/CD](#cicd)
-- [Docker](#docker-1)
+- [Docker](#docker)
 - [Scripts](#scripts)
 - [Usando como template](#usando-como-template)
 - [Notas de design e pegadinhas](#notas-de-design-e-pegadinhas)
@@ -52,9 +70,9 @@ cmd/
   healthcheck/main.go          # binário standalone para o HEALTHCHECK do Dockerfile
 internal/
   config/                        # config baseada em env, com defaults sensatos
-  server/                         # server.New — conecta toda rota; compartilhado por main.go e testes
+  server/                         # server.New: conecta toda rota; compartilhado por main.go e testes
   db/                              # conexão GORM + migrations do golang-migrate embutidas
-    migrations/                     # *.up.sql / *.down.sql — commitar
+    migrations/                     # *.up.sql / *.down.sql: commitar
   models/                           # User, RefreshToken, Note (GORM)
   apierror/                         # ApiError + ErrorHandler do Fiber → formato {"error": {...}}, bind de validação
   auth/                             # JWT, bcrypt, middleware RequireAuth/RequireAdmin, handlers de /auth/*
@@ -65,7 +83,7 @@ internal/
   mail/                             # envio SMTP, fallback console em dev
 ```
 
-## Começando (Docker — recomendado)
+## Começando (Docker: recomendado)
 
 ```bash
 cp .env.example .env
@@ -105,14 +123,14 @@ Veja `.env.example` para a lista completa e comentada.
 
 `internal/auth` (todos `/auth/*`, públicos):
 
-- `POST /auth/register` — 201, corpo vazio. 409 se o email já existe.
-- `GET /auth/verify-email?token=...` — 200 vazio. 404 token inválido, 409 expirado.
-- `POST /auth/login` — 200, `{accessToken, refreshToken}`. 401 credenciais inválidas ou email não verificado.
-- `POST /auth/refresh` — rotaciona o refresh token (o antigo é apagado, um novo é emitido). 401 se inválido/expirado/revogado.
-- `POST /auth/logout` — 200, idempotente.
-- `POST /auth/forgot-password` — sempre 200 (sem vazamento de enumeração de usuário).
-- `POST /auth/reset-password` — 200. 404/409 igual ao verify-email.
-- `PATCH /account/password`, `DELETE /account` (`internal/account`) — autenticados, `Authorization: Bearer <accessToken>`.
+- `POST /auth/register`: 201, corpo vazio. 409 se o email já existe.
+- `GET /auth/verify-email?token=...`: 200 vazio. 404 token inválido, 409 expirado.
+- `POST /auth/login`: 200, `{accessToken, refreshToken}`. 401 credenciais inválidas ou email não verificado.
+- `POST /auth/refresh`: rotaciona o refresh token (o antigo é apagado, um novo é emitido). 401 se inválido/expirado/revogado.
+- `POST /auth/logout`: 200, idempotente.
+- `POST /auth/forgot-password`: sempre 200 (sem vazamento de enumeração de usuário).
+- `POST /auth/reset-password`: 200. 404/409 igual ao verify-email.
+- `PATCH /account/password`, `DELETE /account` (`internal/account`): autenticados, `Authorization: Bearer <accessToken>`.
 - Rate limit: 5 tentativas de registro/login por 60s por IP (middleware `limiter` do Fiber, ver `internal/auth/routes.go`).
 - `auth.RequireAuth` (`internal/auth/middleware.go`) é o único middleware usado por toda rota protegida: decodifica e valida o bearer token, sem duplicação por rota. `auth.RequireAdmin` adiciona uma checagem de role em cima.
 
@@ -124,7 +142,7 @@ Tipo `Role` (`USER` | `ADMIN`, padrão `USER`) em `User.Role`. Nunca confie num 
 
 ## Formato de erro
 
-Toda resposta de erro — validação, auth, not-found, não tratado — tem o mesmo envelope, produzido por `apierror.Handler` (o `ErrorHandler` global do Fiber):
+Toda resposta de erro (validação, auth, not-found, não tratado) tem o mesmo envelope, produzido por `apierror.Handler` (o `ErrorHandler` global do Fiber):
 
 ```json
 { "error": { "code": "VALIDATION_ERROR", "message": "Invalid request body", "details": ["email: failed on the 'email' rule"] } }
@@ -151,9 +169,9 @@ Toda foreign key para `users` usa `ON DELETE CASCADE` desde a primeira migration
 
 ## Testes
 
-- **Unitário** (`go test ./internal/auth/...`): hash de senha e roundtrip de JWT, sem banco — `internal/auth/auth_test.go`.
+- **Unitário** (`go test ./internal/auth/...`): hash de senha e roundtrip de JWT, sem banco: `internal/auth/auth_test.go`.
 - **Integração** (`go test ./internal/server/...`): `internal/server/server_test.go` percorre o fluxo completo registro → verificação → login → CRUD de notas → refresh → exclusão de conta através de `fiber.App.Test()` (in-process, sem listener de rede real) contra um Postgres real, sem mock de banco. Defina `TEST_DATABASE_URL` para apontar para um banco específico (usa `DATABASE_URL`/seu padrão como fallback).
-- **Guarda de contagem de queries (N+1)** (`go test ./internal/admin/...`): `internal/admin/query_count_test.go` semeia uma quantidade variável de notas, registra `diagnostics.QueryCounter` (um plugin GORM que conta cada statement SQL executado) na conexão, e garante que `admin.NotesWithOwners` — a função por trás de `GET /admin/notes` — sempre roda exatamente 1 query SQL, tanto com 4 quanto com 8 notas. `NotesWithOwners` usa `Joins("Owner")` do GORM (um único join SQL) em vez de carregar o dono de cada nota numa query separada; se alguém trocar isso por uma busca por nota, esse teste quebra antes de chegar em produção.
+- **Guarda de contagem de queries (N+1)** (`go test ./internal/admin/...`): `internal/admin/query_count_test.go` semeia uma quantidade variável de notas, registra `diagnostics.QueryCounter` (um plugin GORM que conta cada statement SQL executado) na conexão, e garante que `admin.NotesWithOwners` (a função por trás de `GET /admin/notes`) sempre roda exatamente 1 query SQL, tanto com 4 quanto com 8 notas. `NotesWithOwners` usa `Joins("Owner")` do GORM (um único join SQL) em vez de carregar o dono de cada nota numa query separada; se alguém trocar isso por uma busca por nota, esse teste quebra antes de chegar em produção.
 - O CI sobe um container de serviço Postgres e roda a suíte inteira (`go test ./...`) contra ele.
 
 ## CI/CD
@@ -200,3 +218,49 @@ Dependabot (`.github/dependabot.yml`) checa módulos Go, GitHub Actions e o Dock
 - **Um middleware de logging que lê o status antes do error handler escrever ele sempre loga 200.** O `ErrorHandler` configurado do Fiber só roda depois que toda a cadeia de middleware (incluindo um middleware de logging envolvendo tudo com `c.Next()`) já devolveu o controle para o dispatcher externo do Fiber, então um `status := c.Response().StatusCode()` ingênuo logo depois do `c.Next()` lê o status padrão pré-erro. Toda requisição 4xx/5xx era logada como 200 até o `requestLogger` (`internal/server/server.go`) ser mudado para chamar `apierror.Handler` ele mesmo quando `c.Next()` retorna um erro não-nulo, antes de ler o status.
 - **`go-playground/validator` reporta nomes de campo do Go, não do JSON, a menos que você diga para não fazer isso.** `fe.Field()` retorna `"Email"` (o campo da struct) por padrão, não `"email"` (a chave JSON), inconsistente com todo outro backend da família, que reportam o nome de campo no formato de wire. Corrigido via `validate.RegisterTagNameFunc` em `internal/apierror/bind.go`.
 - **Migrations são embutidas (`go:embed`), não lidas do disco em runtime.** A imagem de runtime distroless não tem acesso a filesystem para um diretório `migrations/` enviado separadamente, então `internal/db/db.go` embute `internal/db/migrations/*.sql` direto no binário compilado via `//go:embed all:migrations`. `go build` produz um artefato único e autocontido, sem arquivos externos para copiar para dentro da imagem Docker além do próprio binário.
+
+---
+
+## Perguntas frequentes
+
+**Qual framework web e qual ORM ele usa?**
+[Fiber](https://gofiber.io) v2 para rotas e middleware, e [GORM](https://gorm.io) com o driver pgx para Postgres. As migrations vêm do [golang-migrate](https://github.com/golang-migrate/migrate).
+
+**Como as migrations rodam?**
+São arquivos SQL simples embutidos no binário com `go:embed` e aplicados automaticamente no boot. Você só precisa da CLI `migrate` localmente para gerar o esqueleto de novas migrations.
+
+**Por que uma imagem distroless?**
+O binário é estático (`CGO_ENABLED=0`) e roda em `gcr.io/distroless/static:nonroot`: sem shell, sem gerenciador de pacotes, com usuário não-root por padrão. Como não existe `curl` para um healthcheck, um segundo binário Go minúsculo faz o HTTP GET.
+
+**Quais portas ele usa?**
+O app escuta na `8083`. O Postgres fica exposto na porta `5460` do host por padrão, pra não conflitar com um Postgres local na `5432`.
+
+**Como ele evita queries N+1?**
+Um teste registra um plugin do GORM que conta cada statement SQL e verifica que o `GET /admin/notes` sempre roda exatamente uma query. Veja [Testes](#testes).
+
+**Como ativo o hook de pre-commit?**
+Rode `git config core.hooksPath githooks` uma vez por clone.
+
+## A família de templates
+
+Mesma ideia, stack diferente. Clona um e já sai construindo.
+
+| Camada | Starter |
+|---|---|
+| Backend | [Spring Boot](https://github.com/obrenoalvim/back-template-spring) · **Go (este repo)** · [FastAPI](https://github.com/obrenoalvim/back-template-fastapi) · [NestJS](https://github.com/obrenoalvim/back-template-nest) · [Laravel](https://github.com/obrenoalvim/back-template-laravel) · [ASP.NET Core](https://github.com/obrenoalvim/back-template-dotnet) |
+| Frontend | [Angular](https://github.com/obrenoalvim/front-template-angular) · [React](https://github.com/obrenoalvim/front-template-react) · [SvelteKit](https://github.com/obrenoalvim/front-template-sveltekit) · [Vue](https://github.com/obrenoalvim/front-template-vue) |
+| Full-stack | [Next.js](https://github.com/obrenoalvim/next-template) |
+
+## Licença
+
+[MIT](LICENSE)
+
+---
+
+<div align="center">
+
+Se isso te poupou um dia de setup, uma ⭐ ajuda outras pessoas desenvolvedoras a encontrá-lo.
+
+<sub>**Tópicos:** go · golang · fiber · gorm · golang-migrate · postgresql · jwt-authentication · rate-limiting · docker · distroless · rest-api · starter-kit · backend-template</sub>
+
+</div>
